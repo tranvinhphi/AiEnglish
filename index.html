@@ -1,0 +1,196 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Voice - Học Tiếng Anh</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    h1 {
+      color: #333;
+      font-size: 24px;
+      text-align: center;
+    }
+    #output {
+      margin: 20px;
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    select {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+      border-radius: 5px;
+    }
+    #sentence {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Voice - Học Tiếng Anh</h1>
+  <div id="sentence">Nhấn "Học câu mới" để bắt đầu!</div>
+  <select id="voiceSelect"></select>
+  <button onclick="speakCurrentSentence()">Nghe câu</button>
+  <button onclick="startRecognition()">Luyện nói</button>
+  <button onclick="getNewSentence()">Học câu mới</button>
+  <div id="output"></div>
+
+  <script>
+    // Danh sách các câu mẫu tiếng Anh để học
+    const sentences = [
+      "Hello, how are you today?",
+      "What is your favorite book?",
+      "I am learning English every day.",
+      "Can you help me with my homework?",
+      "The weather is nice today, isn't it?"
+    ];
+    let currentSentence = sentences[0];
+
+    // Cập nhật câu hiển thị
+    function updateSentenceDisplay() {
+      document.getElementById('sentence').textContent = currentSentence;
+    }
+
+    // Lấy câu mới ngẫu nhiên
+    function getNewSentence() {
+      currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
+      updateSentenceDisplay();
+      document.getElementById('output').textContent = '';
+    }
+
+    // Web Speech API - Phát giọng nói
+    const synth = window.speechSynthesis;
+    let voices = [];
+
+    function populateVoiceList() {
+      voices = synth.getVoices();
+      const voiceSelect = document.getElementById('voiceSelect');
+      voiceSelect.innerHTML = '';
+      voices.forEach((voice, index) => {
+        if (voice.lang.includes('en')) { // Chỉ chọn giọng tiếng Anh
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = `${voice.name} (${voice.lang})`;
+          voiceSelect.appendChild(option);
+        }
+      });
+    }
+
+    // Đảm bảo danh sách giọng nói được tải
+    synth.onvoiceschanged = populateVoiceList;
+    populateVoiceList();
+
+    function speakCurrentSentence() {
+      const utterance = new SpeechSynthesisUtterance(currentSentence);
+      const selectedVoice = voices[document.getElementById('voiceSelect').value];
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+      utterance.lang = 'en-US';
+      utterance.pitch = 1;
+      utterance.rate = 1;
+      synth.speak(utterance);
+    }
+
+    // Web Speech API - Nhận diện giọng nói
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const userSpeech = event.results[0][0].transcript;
+        document.getElementById('output').textContent = `Bạn nói: "${userSpeech}"`;
+        if (userSpeech.toLowerCase().trim() === currentSentence.toLowerCase().trim()) {
+          document.getElementById('output').textContent += ' - Đúng rồi!';
+        } else {
+          document.getElementById('output').textContent += ' - Hãy thử lại!';
+        }
+      };
+
+      recognition.onerror = (event) => {
+        document.getElementById('output').textContent = 'Lỗi nhận diện: ' + event.error;
+      };
+
+      function startRecognition() {
+        document.getElementById('output').textContent = 'Đang lắng nghe... Hãy nói câu hiện tại!';
+        recognition.start();
+      }
+    } else {
+      document.getElementById('output').textContent = 'Trình duyệt không hỗ trợ nhận diện giọng nói.';
+    }
+
+    // Khởi tạo câu đầu tiên
+    updateSentenceDisplay();
+  </script>
+</body>
+</html>
