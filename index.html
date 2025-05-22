@@ -95,34 +95,182 @@
 </head>
 <body>
   <h1>AI Voice - Học Tiếng Anh</h1>
+  <select id="topicSelect" onchange="updateTopic()">
+    <option value="general">General English</option>
+    <option value="natural_sciences">Natural Sciences</option>
+    <option value="mathematics">Mathematics</option>
+    <option value="literature">Literature</option>
+    <option value="sociology">Sociology</option>
+    <option value="history">History</option>
+    <option value="chemistry">Chemistry</option>
+    <option value="computer_science">Computer Science</option>
+    <option value="environmental_science">Environmental Science</option>
+  </select>
   <div id="sentence">Nhấn "Học câu mới" để bắt đầu!</div>
   <select id="voiceSelect"></select>
   <button onclick="speakCurrentSentence()">Nghe câu</button>
   <button onclick="startRecognition()">Luyện nói</button>
   <button onclick="getNewSentence()">Học câu mới</button>
+  <button onclick="startChat()">Chat Voice</button>
   <div id="output"></div>
 
   <script>
-    // Danh sách các câu mẫu tiếng Anh để học
-    const sentences = [
-      "Hello, how are you today?",
-      "What is your favorite book?",
-      "I am learning English every day.",
-      "Can you help me with my homework?",
-      "The weather is nice today, isn't it?"
-    ];
-    let currentSentence = sentences[0];
+    // Danh sách câu mẫu theo chủ đề
+    const topics = {
+      general: [
+        "Hello, how are you today?",
+        "What is your favorite book?",
+        "I am learning English every day.",
+        "Can you help me with my homework?",
+        "The weather is nice today, isn't it?"
+      ],
+      natural_sciences: [
+        "What is the primary source of energy for Earth's climate system?",
+        "How does photosynthesis contribute to the carbon cycle?",
+        "Can you explain the theory of relativity?",
+        "What is the structure of a DNA molecule?",
+        "Why do planets orbit the sun in elliptical paths?"
+      ],
+      mathematics: [
+        "What is the Pythagorean theorem used for?",
+        "Can you solve a quadratic equation?",
+        "What does the term 'derivative' mean in calculus?",
+        "How is probability calculated in statistics?",
+        "What is the significance of pi in geometry?"
+      ],
+      literature: [
+        "Who wrote the novel 'Pride and Prejudice'?",
+        "What is the main theme of 'To Kill a Mockingbird'?",
+        "Can you name a famous Shakespearean tragedy?",
+        "What is a metaphor in poetry?",
+        "Why is '1984' by George Orwell significant?"
+      ],
+      sociology: [
+        "What factors influence social inequality?",
+        "How does culture shape individual behavior?",
+        "What is the role of socialization in society?",
+        "Can you explain the concept of social norms?",
+        "Why do people conform to group expectations?"
+      ],
+      history: [
+        "What caused the fall of the Roman Empire?",
+        "Who was the leader of the French Revolution?",
+        "What was the significance of the Industrial Revolution?",
+        "Can you describe the events of World War II?",
+        "What is the legacy of ancient Greek civilization?"
+      ],
+      chemistry: [
+        "What is the periodic table used for?",
+        "How does a chemical bond form between atoms?",
+        "What is the pH scale in chemistry?",
+        "Can you explain a redox reaction?",
+        "What are the properties of noble gases?"
+      ],
+      computer_science: [
+        "What is an algorithm in programming?",
+        "How does a binary search work?",
+        "What is the difference between hardware and software?",
+        "Can you explain object-oriented programming?",
+        "Why is cybersecurity important today?"
+      ],
+      environmental_science: [
+        "What are the causes of climate change?",
+        "How does deforestation impact biodiversity?",
+        "What is the greenhouse effect?",
+        "Can renewable energy reduce carbon emissions?",
+        "Why is water conservation important?"
+      ]
+    };
+
+    // Danh sách phản hồi cho chế độ chat voice
+    const chatResponses = {
+      general: [
+        "I'm doing great, thanks for asking!",
+        "I love reading science fiction books!",
+        "Keep practicing, you're doing well!",
+        "Sure, I can help with that!",
+        "Yeah, the weather is perfect today!"
+      ],
+      natural_sciences: [
+        "The sun is the primary energy source for our climate!",
+        "Photosynthesis is key to balancing carbon in nature.",
+        "Relativity revolutionized how we understand time and space!",
+        "DNA’s double helix structure is fascinating, isn’t it?",
+        "Elliptical orbits are due to gravitational forces!"
+      ],
+      mathematics: [
+        "The Pythagorean theorem is great for right triangles!",
+        "Quadratic equations are fun to solve with the formula!",
+        "Derivatives measure the rate of change in functions.",
+        "Probability helps us predict outcomes in data!",
+        "Pi is essential for circles and so much more!"
+      ],
+      literature: [
+        "Jane Austen wrote that classic romance novel!",
+        "That book tackles themes of justice and morality.",
+        "Hamlet is one of Shakespeare’s most famous tragedies!",
+        "Metaphors add such depth to poetry, don’t they?",
+        "1984 warns us about surveillance and control!"
+      ],
+      sociology: [
+        "Social inequality often stems from economic disparities.",
+        "Culture shapes how we see the world!",
+        "Socialization teaches us how to interact in society.",
+        "Social norms guide our everyday behavior.",
+        "Conformity can be powerful in groups, right?"
+      ],
+      history: [
+        "The Roman Empire fell due to many complex factors.",
+        "Robespierre was a key figure in the French Revolution!",
+        "The Industrial Revolution changed manufacturing forever.",
+        "World War II reshaped global politics, didn’t it?",
+        "Greek civilization gave us democracy and philosophy!"
+      ],
+      chemistry: [
+        "The periodic table organizes all known elements!",
+        "Chemical bonds form through electron sharing or transfer.",
+        "The pH scale measures acidity or alkalinity.",
+        "Redox reactions involve electron transfer, so cool!",
+        "Noble gases are stable due to their full electron shells."
+      ],
+      computer_science: [
+        "Algorithms are step-by-step problem solvers!",
+        "Binary search is super efficient for sorted data.",
+        "Hardware is physical, software is the code!",
+        "OOP organizes code into reusable objects.",
+        "Cybersecurity protects our digital world!"
+      ],
+      environmental_science: [
+        "Climate change is driven by human activities like burning fossil fuels.",
+        "Deforestation threatens ecosystems and species survival.",
+        "The greenhouse effect traps heat in our atmosphere.",
+        "Renewable energy is key to a sustainable future!",
+        "Water conservation is critical for our planet’s health."
+      ]
+    };
+
+    let currentTopic = 'general';
+    let currentSentence = topics[currentTopic][0];
+    let isChatting = false;
 
     // Cập nhật câu hiển thị
     function updateSentenceDisplay() {
-      document.getElementById('sentence').textContent = currentSentence;
+      document.getElementById('sentence').textContent = isChatting ? 'Nói bất kỳ câu nào bằng tiếng Anh!' : currentSentence;
+    }
+
+    // Cập nhật chủ đề
+    function updateTopic() {
+      currentTopic = document.getElementById('topicSelect').value;
+      getNewSentence();
     }
 
     // Lấy câu mới ngẫu nhiên
     function getNewSentence() {
-      currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
-      updateSentenceDisplay();
-      document.getElementById('output').textContent = '';
+      if (!isChatting) {
+        currentSentence = topics[currentTopic][Math.floor(Math.random() * topics[currentTopic].length)];
+        updateSentenceDisplay();
+        document.getElementById('output').textContent = '';
+      }
     }
 
     // Web Speech API - Phát giọng nói
@@ -134,7 +282,7 @@
       const voiceSelect = document.getElementById('voiceSelect');
       voiceSelect.innerHTML = '';
       voices.forEach((voice, index) => {
-        if (voice.lang.includes('en')) { // Chỉ chọn giọng tiếng Anh
+        if (voice.lang.includes('en')) {
           const option = document.createElement('option');
           option.value = index;
           option.textContent = `${voice.name} (${voice.lang})`;
@@ -143,12 +291,11 @@
       });
     }
 
-    // Đảm bảo danh sách giọng nói được tải
     synth.onvoiceschanged = populateVoiceList;
     populateVoiceList();
 
     function speakCurrentSentence() {
-      const utterance = new SpeechSynthesisUtterance(currentSentence);
+      const utterance = new SpeechSynthesisUtterance(isChatting ? document.getElementById('output').textContent : currentSentence);
       const selectedVoice = voices[document.getElementById('voiceSelect').value];
       if (selectedVoice) {
         utterance.voice = selectedVoice;
@@ -161,8 +308,10 @@
 
     // Web Speech API - Nhận diện giọng nói
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
     if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
+      recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
@@ -170,27 +319,97 @@
       recognition.onresult = (event) => {
         const userSpeech = event.results[0][0].transcript;
         document.getElementById('output').textContent = `Bạn nói: "${userSpeech}"`;
-        if (userSpeech.toLowerCase().trim() === currentSentence.toLowerCase().trim()) {
-          document.getElementById('output').textContent += ' - Đúng rồi!';
+        
+        if (isChatting) {
+          const response = chatResponses[currentTopic][Math.floor(Math.random() * chatResponses[currentTopic].length)];
+          document.getElementById('output').textContent = `Bạn nói: "${userSpeech}" - AI trả lời: "${response}"`;
+          const utterance = new SpeechSynthesisUtterance(response);
+          const selectedVoice = voices[document.getElementById('voiceSelect').value];
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+          }
+          utterance.lang = 'en-US';
+          utterance.pitch = 1;
+          utterance.rate = 1;
+          synth.speak(utterance);
         } else {
-          document.getElementById('output').textContent += ' - Hãy thử lại!';
+          if (userSpeech.toLowerCase().trim() === currentSentence.toLowerCase().trim()) {
+            document.getElementById('output').textContent += ' - Đúng rồi!';
+          } else {
+            document.getElementById('output').textContent += ' - Hãy thử lại!';
+          }
         }
       };
 
       recognition.onerror = (event) => {
-        document.getElementById('output').textContent = 'Lỗi nhận diện: ' + event.error;
+        let errorMessage = `Lỗi nhận diện giọng nói: ${event.error}`;
+        if (event.error === 'not-allowed') {
+          errorMessage = 'Lỗi: Vui lòng cấp quyền microphone trong Cài đặt > Safari > Microphone trên iPhone và đảm bảo trang web chạy trên HTTPS.';
+        } else if (event.error === 'network') {
+          errorMessage = 'Lỗi mạng: Vui lòng kiểm tra kết nối internet và thử lại.';
+        } else if (event.error === 'no-speech') {
+          errorMessage = 'Không nhận diện được giọng nói. Hãy nói to và rõ hơn!';
+        }
+        document.getElementById('output').textContent = errorMessage;
+        console.error(`SpeechRecognition error: ${event.error} - Message: ${event.message}`);
+      };
+
+      recognition.onstart = () => {
+        document.getElementById('output').textContent = isChatting ? 'Đang lắng nghe... Nói bất kỳ câu tiếng Anh nào!' : 'Đang lắng nghe... Hãy nói câu hiện tại!';
+      };
+
+      recognition.onend = () => {
+        if (isChatting) {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              document.getElementById('output').textContent = 'Lỗi khi tiếp tục chế độ Chat Voice. Vui lòng kiểm tra quyền microphone và HTTPS.';
+              console.error('SpeechRecognition restart error:', e);
+            }
+          }, 500);
+        }
       };
 
       function startRecognition() {
-        document.getElementById('output').textContent = 'Đang lắng nghe... Hãy nói câu hiện tại!';
-        recognition.start();
+        try {
+          if (isChatting) {
+            document.getElementById('output').textContent = 'Chế độ Chat Voice: Nói bất kỳ câu nào bằng tiếng Anh!';
+            recognition.start();
+          } else {
+            recognition.start();
+          }
+        } catch (e) {
+          document.getElementById('output').textContent = 'Lỗi khi bắt đầu nhận diện giọng nói. Vui lòng kiểm tra quyền microphone và HTTPS.';
+          console.error('SpeechRecognition start error:', e);
+        }
+      }
+
+      function startChat() {
+        isChatting = !isChatting;
+        document.getElementById('sentence').textContent = isChatting ? 'Nói bất kỳ câu nào bằng tiếng Anh!' : currentSentence;
+        document.getElementById('output').textContent = isChatting ? 'Nhấn "Chat Voice" để dừng chế độ chat.' : '';
+        if (isChatting) {
+          startRecognition();
+        } else {
+          recognition.stop();
+        }
       }
     } else {
-      document.getElementById('output').textContent = 'Trình duyệt không hỗ trợ nhận diện giọng nói.';
+      document.getElementById('output').textContent = 'Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng thử trên Safari (iOS 14.5+) hoặc Chrome.';
+      console.error('SpeechRecognition not available in this browser.');
     }
 
-    // Khởi tạo câu đầu tiên
-    updateSentenceDisplay();
+    // Kiểm tra quyền microphone và API khi tải trang
+    window.onload = () => {
+      updateSentenceDisplay();
+      document.getElementById('output').textContent = 'Vui lòng cấp quyền microphone khi được hỏi để sử dụng tính năng luyện nói hoặc chat voice.';
+      const isSpeechRecognitionAvailable = !!window.SpeechRecognition || !!window.webkitSpeechRecognition;
+      console.log(`SpeechRecognition available: ${isSpeechRecognitionAvailable}`);
+      if (!isSpeechRecognitionAvailable) {
+        document.getElementById('output').textContent = 'Lỗi: Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Safari (iOS 14.5+) hoặc Chrome.';
+      }
+    };
   </script>
 </body>
 </html>
